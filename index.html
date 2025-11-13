@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apochron</title>
+  <meta name="description" content="Decode autostereograms into depth maps. See the hidden 3D structure for those who can't view stereograms directly.">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #04070a;
+      color: #d7e8ff;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Control Panel */
+    .control-panel {
+      width: 320px;
+      background: linear-gradient(180deg, #0a0612 0%, #04070a 100%);
+      border-right: 1px solid rgba(199, 125, 255, 0.2);
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .logo {
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #c77dff 0%, #ff6bb5 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .tagline {
+      font-size: 13px;
+      color: #8899aa;
+      margin-bottom: 20px;
+      line-height: 1.4;
+    }
+
+    .section {
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #c77dff;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .control-group {
+      margin-bottom: 16px;
+    }
+
+    .control-label {
+      display: block;
+      font-size: 13px;
+      color: #b0b0b0;
+      margin-bottom: 6px;
+    }
+
+    .range-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      height: 4px;
+      background: rgba(199, 125, 255, 0.2);
+      border-radius: 2px;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      background: #c77dff;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(199, 125, 255, 0.5);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      background: #c77dff;
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 0 8px rgba(199, 125, 255, 0.5);
+    }
+
+    .range-value {
+      min-width: 40px;
+      text-align: right;
+      font-size: 13px;
+      color: #c77dff;
+      font-weight: 600;
+    }
+
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: #c77dff;
+    }
+
+    .info-hint {
+      font-size: 11px;
+      color: #7788aa;
+      margin-top: 4px;
+      font-style: italic;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 10px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #c77dff 0%, #9d4edd 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(199, 125, 255, 0.4);
+    }
+
+    .btn-secondary {
+      background: rgba(199, 125, 255, 0.15);
+      color: #c77dff;
+      border: 1px solid rgba(199, 125, 255, 0.3);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(199, 125, 255, 0.25);
+      border-color: rgba(199, 125, 255, 0.5);
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .file-input-label {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      border: 2px dashed rgba(199, 125, 255, 0.4);
+      border-radius: 6px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #c77dff;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .file-input-label:hover {
+      border-color: #c77dff;
+      background: rgba(199, 125, 255, 0.1);
+    }
+
+    /* Preview Area */
+    .preview-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      position: relative;
+      background: radial-gradient(ellipse at center, rgba(199, 125, 255, 0.05) 0%, transparent 70%);
+    }
+
+    #previewCanvas {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+    }
+
+    .placeholder {
+      text-align: center;
+      color: #5566aa;
+    }
+
+    .placeholder-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .placeholder-text {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .placeholder-hint {
+      font-size: 13px;
+      opacity: 0.7;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: auto;
+      padding-top: 20px;
+      border-top: 1px solid rgba(199, 125, 255, 0.2);
+      font-size: 11px;
+      color: #7788aa;
+      text-align: center;
+    }
+
+    .footer a {
+      color: #c77dff;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* License Modal */
+    .license-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 999;
+      backdrop-filter: blur(4px);
+    }
+
+    .license-overlay.show {
+      display: block;
+    }
+
+    .license-modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(180deg, #0f0a18 0%, #04070a 100%);
+      border: 1px solid rgba(199, 125, 255, 0.3);
+      border-radius: 12px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow: hidden;
+      z-index: 1000;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    }
+
+    .license-modal.show {
+      display: block;
+    }
+
+    .license-modal-header {
+      padding: 20px;
+      border-bottom: 1px solid rgba(199, 125, 255, 0.2);
+      position: relative;
+    }
+
+    .license-modal-title {
+      font-size: 18px;
+      color: #c77dff;
+      font-weight: 600;
+    }
+
+    .license-close {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(255, 0, 0, 0.15);
+      border: 1px solid rgba(255, 0, 0, 0.3);
+      color: #ff5555;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .license-close:hover {
+      background: rgba(255, 0, 0, 0.3);
+      transform: rotate(90deg);
+    }
+
+    .license-modal-text {
+      padding: 20px;
+      max-height: calc(80vh - 80px);
+      overflow-y: auto;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #b0b0b0;
+      text-align: left;
+      white-space: pre-wrap;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(199, 125, 255, 0.3);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(199, 125, 255, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Control Panel -->
+    <div class="control-panel">
+      <img src="assets/images/logo.png" alt="Apoculus Logo" onerror="this.style.display='none'" style="display:block; margin-left:auto; margin-right:auto; width:50%;">
+      <div class="logo" style="display:block; margin-left:auto; margin-right:auto;">Apochron</div>
+      <div class="tagline" style="display:block; margin-left:auto; margin-right:auto;">Decode autostereograms into depth maps. Reveal the hidden 3D structure.</div>
+
+      <!-- Load Image -->
+      <div class="section">
+        <div class="section-title">Load Autostereogram</div>
+        <label for="imageInput" class="file-input-label">
+          📂 Choose Image
+        </label>
+        <input type="file" id="imageInput" accept="image/*">
+      </div>
+
+      <!-- Decoding Parameters -->
+      <div class="section">
+        <div class="section-title">
+          Decoding Parameters
+          <span id="helpLink" style="margin-left: 10px; font-size: 0.75rem; color: #c77dff; cursor: pointer; opacity: 0.8;">Help</span>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label">Min Pattern Width</label>
+          <div class="range-container">
+            <input type="range" id="minStripWidth" min="30" max="200" value="47">
+            <span class="range-value" id="minStripWidthValue">47</span>
+          </div>
+          <div class="info-hint">Minimum repeating pattern size</div>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label">Max Pattern Width</label>
+          <div class="range-container">
+            <input type="range" id="maxStripWidth" min="45" max="240" value="97">
+            <span class="range-value" id="maxStripWidthValue">97</span>
+          </div>
+          <div class="info-hint">Maximum repeating pattern size</div>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label">Occlusion Passes</label>
+          <div class="range-container">
+            <input type="range" id="occlusionPasses" min="0" max="5" value="2">
+            <span class="range-value" id="occlusionPassesValue">2</span>
+          </div>
+          <div class="info-hint">Clean up vertical edges (0-5)</div>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label">Cleanup Window Size</label>
+          <div class="range-container">
+            <input type="range" id="windowRadius" min="1" max="5" value="3">
+            <span class="range-value" id="windowRadiusValue">3</span>
+          </div>
+          <div class="info-hint">Larger = more aggressive cleanup</div>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label">Contrast</label>
+          <div class="range-container">
+            <input type="range" id="sensitivity" min="1" max="20" step="0.1" value="5">
+            <span class="range-value" id="sensitivityValue">5.0</span>
+          </div>
+          <div class="info-hint">Output contrast adjustment</div>
+        </div>
+
+        <div class="control-group">
+          <label class="checkbox-container">
+            <input type="checkbox" id="invertDepth">
+            <span class="control-label" style="margin: 0;">Invert Depth Map</span>
+          </label>
+          <div class="info-hint">Flip near/far in output</div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="section">
+        <button class="btn-primary" id="decodeBtn" disabled>🔍 Decode Depth Map</button>
+        <button class="btn-secondary" id="downloadBtn" disabled>⬇ Download Depth Map</button>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <div><a id="licenseFooter">MIT License © 2025 NQR &middot; Click to view</a></div>
+      </div>
+    </div>
+
+    <!-- Preview Area -->
+    <div class="preview-container">
+      <div class="placeholder" id="placeholder">
+        <div class="placeholder-icon">🔮</div>
+        <div class="placeholder-text">Load an Autostereogram</div>
+        <div class="placeholder-hint">Upload a stereogram to decode its hidden depth map</div>
+      </div>
+      <canvas id="previewCanvas" style="display: none;"></canvas>
+    </div>
+  </div>
+
+  <!-- License Modal -->
+  <div class="license-overlay" id="licenseOverlay"></div>
+  <div class="license-modal" id="licenseModal">
+    <div class="license-modal-header">
+      <h2 class="license-modal-title">MIT License</h2>
+      <div class="license-close" id="licenseClose">×</div>
+    </div>
+    <div class="license-modal-text">
+MIT License
+
+Copyright (c) 2025 NQR
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+    </div>
+  </div>
+
+  <!-- Help Modal -->
+  <div class="license-overlay" id="helpOverlay"></div>
+  <div class="license-modal" id="helpModal">
+    <div class="license-modal-header">
+      <h2 class="license-modal-title">How to Use Apochron</h2>
+      <div class="license-close" id="helpClose">×</div>
+    </div>
+    <div class="license-modal-text" style="white-space: normal; line-height: 1.6;">
+      <p style="margin: 0 0 10px 0; color: #d7e8ff; font-size: 13px;">Apochron decodes autostereograms back into depth maps. Here's how to get the best results:</p>
+      <h3 style="margin: 12px 0 8px 0; color: #c77dff; font-size: 14px; font-weight: bold;">📏 Pattern Width Settings</h3>
+      <p style="margin: 0 0 6px 0;"><strong style="color: #ff6bb5;">Min Pattern Width:</strong> Controls detection of nearby (close) depth levels</p>
+      <ul style="margin: 0 0 8px 20px; padding: 0;">
+        <li style="margin-bottom: 4px;">Too high → Nearby levels get corrupted</li>
+        <li style="margin-bottom: 4px;">Too low → Slower processing, results look muted</li>
+        <li>Sweet spot: Usually 45-50 pixels</li>
+      </ul>
+      <p style="margin: 0 0 6px 0;"><strong style="color: #ff6bb5;">Max Pattern Width:</strong> Controls detection of distant (far) depth levels</p>
+      <ul style="margin: 0 0 8px 20px; padding: 0;">
+        <li style="margin-bottom: 4px;">Too low → Far levels get corrupted</li>
+        <li style="margin-bottom: 4px;">Too high → Slower processing, results look washed out</li>
+        <li>Sweet spot: Usually 90-100 pixels</li>
+      </ul>
+      <p style="margin: 0 0 10px 0;"><strong style="color: #ff6bb5;">Range too wide:</strong> If max - min is too large (> 60), depth levels wash out or muted and blend together. Keep them reasonably close for greatest contrast!</p>
+      <h3 style="margin: 12px 0 8px 0; color: #c77dff; font-size: 14px; font-weight: bold;">🔧 Cleanup Parameters</h3>
+      <p style="margin: 0 0 6px 0;"><strong style="color: #ff6bb5;">Occlusion Passes:</strong> Number of times to clean up vertical edges</p>
+      <ul style="margin: 0 0 8px 20px; padding: 0;">
+        <li style="margin-bottom: 4px;">0 = No cleanup (raw output, noisy edges)</li>
+        <li style="margin-bottom: 4px;">2 = Good balance (recommended)</li>
+        <li style="margin-bottom: 4px;">5 = Maximum cleanup (may look blocky)</li>
+      </ul>
+      <p style="margin: 0 0 6px 0;"><strong style="color: #ff6bb5;">Cleanup Window Size:</strong> How many neighboring pixels to consider</p>
+      <ul style="margin: 0 0 10px 20px; padding: 0;">
+        <li style="margin-bottom: 4px;">1-2 = Gentle cleanup (preserves detail)</li>
+        <li style="margin-bottom: 4px;">3 = Good balance (recommended)</li>
+        <li style="margin-bottom: 4px;">4-5 = Aggressive cleanup (cleaner but may blur small features)</li>
+      </ul>
+      <h3 style="margin: 12px 0 8px 0; color: #c77dff; font-size: 14px; font-weight: bold;">💡 Troubleshooting</h3>
+      <p style="margin: 0 0 6px 0;"><strong style="color: #ff6bb5;">Depth map looks washed out:</strong></p>
+      <ul style="margin: 0 0 8px 20px; padding: 0;">
+        <li>Pattern width range is too wide - narrow the gap between min and max</li>
+        <li>Try increasing Contrast slider</li>
+      </ul>
+      <p style="margin: 0 0 6px 0;"><strong style="color: #ff6bb5;">Nearby levels corrupted:</strong></p>
+      <ul style="margin: 0 0 8px 20px; padding: 0;">
+        <li>Min Pattern Width is too high</li>
+      </ul>
+      <p style="margin: 0 0 6px 0;"><strong style="color: #ff6bb5;">Background and far levels corrupted:</strong></p>
+      <ul style="margin: 0 0 8px 20px; padding: 0;">
+        <li>Max Pattern Width is too low</li>
+      </ul>
+      <p style="margin: 0 0 6px 0;"><strong style="color: #ff6bb5;">Vertical edges are noisy:</strong></p>
+      <ul style="margin: 0 0 10px 20px; padding: 0;">
+        <li>Increase Occlusion Passes to 3-4</li>
+        <li>Increase Cleanup Window Size to 4</li>
+      </ul>
+      <h3 style="margin: 12px 0 8px 0; color: #c77dff; font-size: 14px; font-weight: bold;">🎯 Quick Start Guide</h3>
+      <p style="margin: 0 0 4px 0;">1. Load an autostereogram image</p>
+      <p style="margin: 0 0 4px 0;">2. Click "Decode Depth Map" with default settings</p>
+      <p style="margin: 0 0 4px 0;">3. If nearby levels look bad → lower Min Pattern Width</p>
+      <p style="margin: 0 0 4px 0;">4. If far levels look bad → raise Max Pattern Width</p>
+      <p style="margin: 0 0 4px 0;">5. If edges are noisy → increase Occlusion Passes</p>
+      <p style="margin: 0 0 10px 0;">6. Download your depth map when satisfied!</p>
+      <p style="margin: 10px 0 0 0; padding: 10px; background: rgba(199, 125, 255, 0.1); border-left: 3px solid #c77dff; font-size: 12px; color: #d7e8ff;">
+        <strong>Pro Tip:</strong> Most autostereograms use pattern widths between 47-97 pixels. Start there and adjust based on what you see!
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // UI Elements
+    const imageInput = document.getElementById('imageInput');
+    const previewCanvas = document.getElementById('previewCanvas');
+    const placeholder = document.getElementById('placeholder');
+    const decodeBtn = document.getElementById('decodeBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    const minStripWidth = document.getElementById('minStripWidth');
+    const maxStripWidth = document.getElementById('maxStripWidth');
+    const occlusionPasses = document.getElementById('occlusionPasses');
+    const windowRadius = document.getElementById('windowRadius');
+    const sensitivity = document.getElementById('sensitivity');
+    const invertDepth = document.getElementById('invertDepth');
+
+    const minStripWidthValue = document.getElementById('minStripWidthValue');
+    const maxStripWidthValue = document.getElementById('maxStripWidthValue');
+    const occlusionPassesValue = document.getElementById('occlusionPassesValue');
+    const windowRadiusValue = document.getElementById('windowRadiusValue');
+    const sensitivityValue = document.getElementById('sensitivityValue');
+
+    let sourceImage = null;
+
+    // Update range value displays
+    minStripWidth.addEventListener('input', () => {
+      minStripWidthValue.textContent = minStripWidth.value;
+    });
+
+    maxStripWidth.addEventListener('input', () => {
+      maxStripWidthValue.textContent = maxStripWidth.value;
+    });
+
+    occlusionPasses.addEventListener('input', () => {
+      occlusionPassesValue.textContent = occlusionPasses.value;
+    });
+
+    windowRadius.addEventListener('input', () => {
+      windowRadiusValue.textContent = windowRadius.value;
+    });
+
+    sensitivity.addEventListener('input', () => {
+      sensitivityValue.textContent = parseFloat(sensitivity.value).toFixed(1);
+    });
+
+    // Load image
+    imageInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          sourceImage = img;
+          placeholder.style.display = 'none';
+          previewCanvas.style.display = 'block';
+          decodeBtn.disabled = false;
+
+          // Show original image initially
+          previewCanvas.width = img.width;
+          previewCanvas.height = img.height;
+          const ctx = previewCanvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Decode autostereogram
+    decodeBtn.addEventListener('click', () => {
+      if (!sourceImage) return;
+
+      const depthMap = decodeAutostereogram(
+        sourceImage,
+        parseInt(minStripWidth.value),
+        parseInt(maxStripWidth.value),
+        parseInt(occlusionPasses.value),
+        parseInt(windowRadius.value),
+        parseFloat(sensitivity.value),
+        invertDepth.checked
+      );
+
+      // Display depth map
+      previewCanvas.width = depthMap.width;
+      previewCanvas.height = depthMap.height;
+      const ctx = previewCanvas.getContext('2d');
+      ctx.putImageData(depthMap, 0, 0);
+
+      downloadBtn.disabled = false;
+    });
+
+    // Download depth map
+    downloadBtn.addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = 'apochron-depth-map.png';
+      link.href = previewCanvas.toDataURL();
+      link.click();
+    });
+
+    // License modal
+    document.getElementById('licenseFooter').addEventListener('click', () => {
+      document.getElementById('licenseModal').classList.add('show');
+      document.getElementById('licenseOverlay').classList.add('show');
+    });
+
+    const closeLicense = () => {
+      document.getElementById('licenseModal').classList.remove('show');
+      document.getElementById('licenseOverlay').classList.remove('show');
+    };
+
+    document.getElementById('licenseClose').addEventListener('click', closeLicense);
+    document.getElementById('licenseOverlay').addEventListener('click', closeLicense);
+
+    // Help modal
+    document.getElementById('helpLink').addEventListener('click', () => {
+      document.getElementById('helpModal').classList.add('show');
+      document.getElementById('helpOverlay').classList.add('show');
+    });
+
+    const closeHelp = () => {
+      document.getElementById('helpModal').classList.remove('show');
+      document.getElementById('helpOverlay').classList.remove('show');
+    };
+
+    document.getElementById('helpClose').addEventListener('click', closeHelp);
+    document.getElementById('helpOverlay').addEventListener('click', closeHelp);
+
+    // ===== AUTOSTEREOGRAM DECODING ALGORITHM =====
+
+    /**
+     * Decode an autostereogram into a depth map
+     *
+     * Algorithm:
+     * 1. For each scanline, find the repeating pattern period using autocorrelation
+     * 2. Smaller periods = closer to viewer (higher depth)
+     * 3. Larger periods = farther from viewer (lower depth)
+     * 4. Fix occlusion artifacts with majority vote
+     * 5. Enhance contrast and normalize to grayscale range
+     */
+    function decodeAutostereogram(img, minPeriod, maxPeriod, passes, winRadius, sens, invert) {
+      // Draw source to canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+      const width = canvas.width;
+      const height = canvas.height;
+
+      // Output depth map
+      let depthData = new Uint8Array(width * height);
+
+      // Process each scanline
+      for (let y = 0; y < height; y++) {
+        const rowDepths = findScanlineDepths(data, y, width, height, minPeriod, maxPeriod);
+
+        // Copy to output
+        for (let x = 0; x < width; x++) {
+          depthData[y * width + x] = rowDepths[x];
+        }
+      }
+
+      // Fix occluded pixels using majority vote (multi-pass)
+      // Occlusion happens at vertical contours where pixels have no pattern match
+      // Multiple passes help clean up sharp edges where values jump multiple levels
+      for (let pass = 0; pass < passes; pass++) {
+        depthData = fixOccludedPixels(depthData, width, height, winRadius);
+      }
+
+      // Enhance contrast
+      depthData = enhanceContrast(depthData, sens);
+
+      // Convert to ImageData
+      const outputData = new ImageData(width, height);
+      for (let i = 0; i < width * height; i++) {
+        let depth = depthData[i];
+        if (invert) depth = 255 - depth;
+
+        outputData.data[i * 4] = depth;
+        outputData.data[i * 4 + 1] = depth;
+        outputData.data[i * 4 + 2] = depth;
+        outputData.data[i * 4 + 3] = 255;
+      }
+
+      return outputData;
+    }
+
+    /**
+     * Find depth for each pixel in a scanline using pattern matching
+     * OPTIMIZED: Squared distances, grayscale, precomputed grayscale row
+     */
+    function findScanlineDepths(data, y, width, height, minPeriod, maxPeriod) {
+      const depths = new Uint8Array(width);
+
+      // BIT-DEPTH QUANTIZATION: Adjust this to help pattern matching
+      // Lower values = more aggressive binning = better for noisy/compressed images
+      // Higher values = more precision = better for clean images
+      // Try: 8 (no quantization), 6 (64 levels), 5 (32 levels), 4 (16 levels)
+      const GRAYSCALE_BITS = 5;
+      const QUANTIZE_SHIFT = 8 - GRAYSCALE_BITS;
+      const QUANTIZE_MASK = (0xFF << QUANTIZE_SHIFT) & 0xFF;
+
+      // OPTIMIZATION 1: Precompute grayscale values for entire row (avoid repeated calculation)
+      const grayRow = new Uint8Array(width);
+      const rowOffset = y * width * 4;
+      for (let x = 0; x < width; x++) {
+        const idx = rowOffset + x * 4;
+        // Fast integer grayscale: (r + g + b) / 3
+        let gray = ((data[idx] + data[idx + 1] + data[idx + 2]) / 3) | 0;
+
+        // OPTIMIZATION 2: Quantize to lower bit-depth to bin similar values
+        // This makes pattern matching more robust to JPEG artifacts and noise
+        gray = gray & QUANTIZE_MASK;
+
+        grayRow[x] = gray;
+      }
+
+      const windowSize = 5;
+
+      for (let x = 0; x < width; x++) {
+        let bestPeriod = maxPeriod;
+        let bestScore = -Infinity;
+
+        // Try all periods (no coarse search - maintains accuracy)
+        for (let period = minPeriod; period <= maxPeriod; period++) {
+          if (x + period >= width) break;
+
+          // OPTIMIZATION 3: Inline pattern matching for speed
+          let score = 0;
+          let count = 0;
+
+          for (let dx = -windowSize; dx <= windowSize; dx++) {
+            const x1 = x + dx;
+            const x2 = x + dx + period;
+
+            if (x1 >= 0 && x1 < width && x2 >= 0 && x2 < width) {
+              // OPTIMIZATION 4: Use precomputed grayscale (no RGB lookup)
+              const diff = grayRow[x1] - grayRow[x2];
+              score -= diff * diff; // Squared distance (no sqrt!)
+              count++;
+            }
+          }
+
+          if (count > 0) {
+            score /= count;
+            if (score > bestScore) {
+              bestScore = score;
+              bestPeriod = period;
+            }
+          }
+        }
+
+        // Map period to depth: smaller period = closer = brighter
+        const normalized = (bestPeriod - minPeriod) / (maxPeriod - minPeriod);
+        depths[x] = ((1 - normalized) * 255) | 0; // Bitwise OR for fast floor
+      }
+
+      return depths;
+    }
+
+    /**
+     * Fix occluded pixels using majority vote
+     * Occlusion occurs at vertical contours where pixels lack pattern matches
+     * Detect outliers and replace with neighborhood majority value
+     */
+    function fixOccludedPixels(data, width, height, windowRadius) {
+      const output = new Uint8Array(data.length);
+
+      // Threshold for detecting outliers (adjust 1-8 for sensitivity)
+      // Lower = more aggressive cleanup
+      const OUTLIER_THRESHOLD = 2;
+
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const idx = y * width + x;
+          const centerValue = data[idx];
+
+          // Collect neighbor values
+          const neighbors = [];
+          for (let dy = -windowRadius; dy <= windowRadius; dy++) {
+            for (let dx = -windowRadius; dx <= windowRadius; dx++) {
+              if (dx === 0 && dy === 0) continue; // Skip center pixel
+
+              const nx = x + dx;
+              const ny = y + dy;
+
+              if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                neighbors.push(data[ny * width + nx]);
+              }
+            }
+          }
+
+          if (neighbors.length === 0) {
+            output[idx] = centerValue;
+            continue;
+          }
+
+          // Calculate median neighbor value (robust center estimate)
+          neighbors.sort((a, b) => a - b);
+          const median = neighbors[Math.floor(neighbors.length / 2)];
+
+          // Check if center is an outlier
+          const diff = Math.abs(centerValue - median);
+
+          if (diff > OUTLIER_THRESHOLD) {
+            // Find majority value (mode) among neighbors
+            const valueCounts = new Map();
+            let maxCount = 0;
+            let majorityValue = median;
+
+            for (const val of neighbors) {
+              const count = (valueCounts.get(val) || 0) + 1;
+              valueCounts.set(val, count);
+
+              if (count > maxCount) {
+                maxCount = count;
+                majorityValue = val;
+              }
+            }
+
+            output[idx] = majorityValue;
+          } else {
+            // Not an outlier, keep original value
+            output[idx] = centerValue;
+          }
+        }
+      }
+
+      return output;
+    }
+
+    /**
+     * Enhance contrast using histogram stretching
+     */
+    function enhanceContrast(data, sensitivity) {
+      const output = new Uint8Array(data.length);
+
+      // Find min and max
+      let min = 255;
+      let max = 0;
+      for (let i = 0; i < data.length; i++) {
+        if (data[i] < min) min = data[i];
+        if (data[i] > max) max = data[i];
+      }
+
+      // Apply sensitivity multiplier
+      const range = max - min;
+      const center = (max + min) / 2;
+      const newRange = Math.min(255, range * sensitivity);
+
+      for (let i = 0; i < data.length; i++) {
+        let value = data[i];
+
+        // Center and scale
+        value = (value - center) * (newRange / range) + 127.5;
+
+        // Clamp
+        value = Math.max(0, Math.min(255, value));
+
+        output[i] = Math.floor(value);
+      }
+
+      return output;
+    }
+  </script>
+</body>
+</html>
