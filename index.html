@@ -296,12 +296,13 @@
     }
 
     .footer a {
-      color: #c77dff;
+      color: #7788aa;
       text-decoration: none;
       cursor: pointer;
     }
 
     .footer a:hover {
+      color: #c77dff;
       text-decoration: underline;
     }
 
@@ -359,16 +360,19 @@
       position: absolute;
       top: 0;
       right: 0;
-      width: 28px;
-      height: 28px;
+      margin: 20px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
       background: rgba(255, 0, 0, 0.15);
       border: 1px solid rgba(255, 0, 0, 0.3);
       color: #ff5555;
-      font-size: 18px;
-      line-height: 1;
+      font-size: 24px;
+      line-height: 16px; /* Adjusted to vertically center the × */
       cursor: pointer;
-      display: flex;
+      display: table-cell;
+      text-align: center;
+      vertical-align: middle;
       align-items: center;
       justify-content: center;
       transition: all 0.2s;
@@ -376,6 +380,7 @@
 
     .license-close:hover {
       background: rgba(255, 0, 0, 0.3);
+      transform-origin: center;
       transform: rotate(90deg);
     }
 
@@ -495,7 +500,12 @@
 
       <!-- Footer -->
       <div class="footer">
-        <div><a id="licenseFooter">MIT License © 2025 NQR &middot; Click to view</a></div>
+        <a href="https://youtube.com/@CLU-NQR" target="_blank">YouTube</a> &middot;
+        <a href="https://discord.gg/HT9YE8rvuN" target="_blank">Discord</a> &middot;
+        <a href="https://nqrlabs.com" target="_blank">NQR Labs</a> &middot;
+        <a href="https://github.com/NQRLabs" target="_blank">GitHub</a>
+        <br>
+        &copy; 2025 NQR &middot; <a id="licenseFooter">License</a>
       </div>
     </div>
 
@@ -514,13 +524,13 @@
   <div class="license-overlay" id="licenseOverlay"></div>
   <div class="license-modal" id="licenseModal">
     <div class="license-modal-header">
-      <h2 class="license-modal-title">MIT License</h2>
-      <div class="license-close" id="licenseClose">×</div>
+      <h2 class="license-modal-title">Apochron License</h2>
+      <div class="license-close" id="licenseClose">&times;</div>
     </div>
     <div class="license-modal-text">
-MIT License
+Apochron - MIT License
 
-Copyright (c) 2025 NQR
+Copyright &copy; 2025 NQR
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
